@@ -1,14 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  GROUPS,
-  KNOCKOUT_MATCHES,
-  RECENT_RESULTS,
-  TOURNAMENT,
-  UPCOMING_MATCHES,
-  type Match,
-} from "@/data/world-cup-2026";
+import type { Group, Match } from "@/data/world-cup-2026";
+import { useWorldCupData } from "@/hooks/useWorldCupData";
 import { getFlag } from "@/lib/flags";
 import styles from "./page.module.css";
 
@@ -29,8 +23,16 @@ function formatDate(date: string): string {
   });
 }
 
+function formatUpdatedAt(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function MatchCard({ match }: { match: Match }) {
   const finished = match.status === "finished";
+  const live = match.status === "live";
   const winnerHome =
     finished && match.homeScore !== undefined && match.awayScore !== undefined
       ? match.homeScore > match.awayScore
@@ -41,7 +43,9 @@ function MatchCard({ match }: { match: Match }) {
       : false;
 
   return (
-    <article className={styles.matchCard}>
+    <article
+      className={`${styles.matchCard} ${live ? styles.matchCardLive : ""}`}
+    >
       <div className={styles.matchMeta}>
         <span>{formatDate(match.date)}</span>
         <span>{match.time}</span>
@@ -51,8 +55,8 @@ function MatchCard({ match }: { match: Match }) {
         <div className={`${styles.teamRow} ${winnerHome ? styles.winner : ""}`}>
           <span className={styles.flag}>{getFlag(match.home)}</span>
           <span className={styles.teamName}>{match.home}</span>
-          {finished ? (
-            <span className={styles.score}>{match.homeScore}</span>
+          {finished || live ? (
+            <span className={styles.score}>{match.homeScore ?? 0}</span>
           ) : (
             <span className={styles.vs}>vs</span>
           )}
@@ -60,26 +64,51 @@ function MatchCard({ match }: { match: Match }) {
         <div className={`${styles.teamRow} ${winnerAway ? styles.winner : ""}`}>
           <span className={styles.flag}>{getFlag(match.away)}</span>
           <span className={styles.teamName}>{match.away}</span>
-          {finished ? (
-            <span className={styles.score}>{match.awayScore}</span>
+          {finished || live ? (
+            <span className={styles.score}>{match.awayScore ?? 0}</span>
           ) : null}
         </div>
       </div>
       <p className={styles.venue}>{match.venue}</p>
-      {!finished ? <span className={styles.badge}>Upcoming</span> : null}
+      {live ? (
+        <span className={`${styles.badge} ${styles.badgeLive}`}>
+          Live {match.minute ? `${match.minute}'` : ""}
+        </span>
+      ) : null}
+      {!finished && !live ? (
+        <span className={styles.badge}>Upcoming</span>
+      ) : null}
     </article>
   );
 }
 
-function ResultsView() {
+function ResultsView({
+  results,
+  live,
+}: {
+  results: Match[];
+  live: Match[];
+}) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <h2>Latest Results</h2>
-        <p>Most recent finished matches</p>
+        <p>Auto-updating match scores</p>
       </div>
+
+      {live.length > 0 ? (
+        <>
+          <h4 className={styles.subheading}>Live now</h4>
+          <div className={styles.matchList}>
+            {live.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+          </div>
+        </>
+      ) : null}
+
       <div className={styles.matchList}>
-        {RECENT_RESULTS.map((match) => (
+        {results.map((match) => (
           <MatchCard key={match.id} match={match} />
         ))}
       </div>
@@ -87,15 +116,15 @@ function ResultsView() {
   );
 }
 
-function GroupsView() {
+function GroupsView({ groups }: { groups: Group[] }) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <h2>Group Standings</h2>
-        <p>Final tables after Matchday 3</p>
+        <p>Updated from live tournament data</p>
       </div>
       <div className={styles.groupGrid}>
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <article key={group.id} className={styles.groupCard}>
             <h3>Group {group.id}</h3>
             <div className={styles.table}>
@@ -132,9 +161,10 @@ function GroupsView() {
   );
 }
 
-function KnockoutView() {
-  const finished = KNOCKOUT_MATCHES.filter((match) => match.status === "finished");
-  const upcoming = KNOCKOUT_MATCHES.filter((match) => match.status === "scheduled");
+function KnockoutView({ matches }: { matches: Match[] }) {
+  const finished = matches.filter((match) => match.status === "finished");
+  const live = matches.filter((match) => match.status === "live");
+  const upcoming = matches.filter((match) => match.status === "scheduled");
 
   return (
     <section className={styles.section}>
@@ -142,6 +172,17 @@ function KnockoutView() {
         <h2>Round of 32</h2>
         <p>Knockout stage bracket</p>
       </div>
+
+      {live.length > 0 ? (
+        <>
+          <h4 className={styles.subheading}>Live now</h4>
+          <div className={styles.matchList}>
+            {live.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+          </div>
+        </>
+      ) : null}
 
       {finished.length > 0 ? (
         <>
@@ -164,28 +205,28 @@ function KnockoutView() {
   );
 }
 
-function ScheduleView() {
+function ScheduleView({ matches }: { matches: Match[] }) {
   const grouped = useMemo(() => {
     const map = new Map<string, Match[]>();
-    for (const match of UPCOMING_MATCHES) {
+    for (const match of matches) {
       const existing = map.get(match.date) ?? [];
       existing.push(match);
       map.set(match.date, existing);
     }
     return [...map.entries()];
-  }, []);
+  }, [matches]);
 
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <h2>Upcoming Matches</h2>
-        <p>Round of 32 schedule</p>
+        <p>Knockout stage schedule</p>
       </div>
-      {grouped.map(([date, matches]) => (
+      {grouped.map(([date, dayMatches]) => (
         <div key={date} className={styles.dayBlock}>
           <h3 className={styles.dayHeading}>{formatDate(date)}</h3>
           <div className={styles.matchList}>
-            {matches.map((match) => (
+            {dayMatches.map((match) => (
               <MatchCard key={match.id} match={match} />
             ))}
           </div>
@@ -197,6 +238,7 @@ function ScheduleView() {
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("results");
+  const { data, loading, error, refresh } = useWorldCupData();
 
   return (
     <div className={styles.app}>
@@ -207,29 +249,70 @@ export default function Home() {
             <p className={styles.kicker}>FIFA World Cup</p>
             <h1>2026 Results</h1>
           </div>
+          {data?.live.length ? (
+            <span className={styles.livePill}>Live</span>
+          ) : null}
         </div>
-        <p className={styles.subtitle}>{TOURNAMENT.host}</p>
+        <p className={styles.subtitle}>
+          {data?.tournament.host ?? "USA · Canada · Mexico"}
+        </p>
         <div className={styles.statsRow}>
           <div className={styles.stat}>
-            <span className={styles.statValue}>{TOURNAMENT.stage}</span>
+            <span className={styles.statValue}>
+              {data?.tournament.stage ?? "Round of 32"}
+            </span>
             <span className={styles.statLabel}>Current stage</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>48</span>
-            <span className={styles.statLabel}>Teams</span>
+            <span className={styles.statValue}>
+              {data?.live.length ?? 0}
+            </span>
+            <span className={styles.statLabel}>Live matches</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>104</span>
-            <span className={styles.statLabel}>Matches</span>
+            <span className={styles.statValue}>
+              {data?.source === "live" ? "Live" : "Cached"}
+            </span>
+            <span className={styles.statLabel}>Data source</span>
           </div>
         </div>
+        <div className={styles.syncRow}>
+          <span>
+            {data?.lastSyncedAt
+              ? `Updated ${formatUpdatedAt(data.lastSyncedAt)}`
+              : "Syncing scores..."}
+          </span>
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => void refresh()}
+            disabled={loading}
+          >
+            Refresh
+          </button>
+        </div>
+        {error ? <p className={styles.errorBanner}>{error}</p> : null}
       </header>
 
       <main className={styles.main}>
-        {tab === "results" ? <ResultsView /> : null}
-        {tab === "groups" ? <GroupsView /> : null}
-        {tab === "knockout" ? <KnockoutView /> : null}
-        {tab === "schedule" ? <ScheduleView /> : null}
+        {loading && !data ? (
+          <div className={styles.loadingState}>Loading live scores...</div>
+        ) : null}
+
+        {data ? (
+          <>
+            {tab === "results" ? (
+              <ResultsView results={data.results} live={data.live} />
+            ) : null}
+            {tab === "groups" ? <GroupsView groups={data.groups} /> : null}
+            {tab === "knockout" ? (
+              <KnockoutView matches={data.knockout} />
+            ) : null}
+            {tab === "schedule" ? (
+              <ScheduleView matches={data.upcoming} />
+            ) : null}
+          </>
+        ) : null}
       </main>
 
       <nav className={styles.bottomNav} aria-label="Main navigation">
