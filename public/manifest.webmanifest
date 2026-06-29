@@ -1,0 +1,18 @@
+{
+  "name": "World Cup 2026 Results",
+  "short_name": "World Cup",
+  "description": "FIFA World Cup 2026 match results, standings, and knockout scores.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07140f",
+  "theme_color": "#07140f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

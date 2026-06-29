@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# World Cup 2026 — iPhone App
 
-## Getting Started
+Mobile app for **FIFA World Cup 2026** live scores, group standings, knockout results, and schedule.
 
-First, run the development server:
+Built for iPhone. Install it to your home screen like a native app.
+
+---
+
+## Quick start on iPhone (recommended)
+
+1. Deploy free on Vercel:  
+   **https://vercel.com/new/clone?repository-url=https://github.com/WyMa2025/buildApp**
+2. Open the deployed URL in **iPhone Safari**
+3. Tap **Share → Add to Home Screen**
+
+Full step-by-step guide: **[IPHONE-SETUP.md](./IPHONE-SETUP.md)**
+
+---
+
+## Install environment (Mac / PC)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/WyMa2025/buildApp.git
+cd buildApp
+npm run setup
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This installs dependencies and verifies the build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Run locally (same Wi‑Fi as iPhone)
 
-## Learn More
+```bash
+npm run iphone
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then on your iPhone (Safari): `http://YOUR-COMPUTER-IP:3000`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+| Command | Description |
+|---------|-------------|
+| `npm run setup` | Install deps + build |
+| `npm run dev` | Start dev server (computer only) |
+| `npm run iphone` | Start server reachable on your Wi‑Fi |
+| `npm run build` | Production build |
+| `npm run start` | Run production server |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Features
+
+- Live scores with auto-refresh (15s live / 60s otherwise)
+- Group standings (12 groups)
+- Knockout bracket
+- Match schedule
+- PWA support for iPhone home screen
+
+---
+
+## Tech
+
+- Next.js 16
+- Live data from World Cup 2026 API (with offline fallback)
